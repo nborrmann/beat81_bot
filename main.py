@@ -66,6 +66,7 @@ def book_from_waitlist():
         f"Checking {len(bookings)} bookings ({booked_count} booked, {waitlist_count} waitlisted) ...",
     )
 
+    success = False
     for booking in bookings:
         booking_date = datetime.fromisoformat(
             booking["event"]["date_begin"].replace("Z", "+00:00")
@@ -86,7 +87,11 @@ def book_from_waitlist():
             )
 
             print(book(booking["event"]["id"]))
+            success = True
+
+    return success
 
 
 if __name__ == "__main__":
-    book_from_waitlist()
+    if not book_from_waitlist():
+        exit(1)

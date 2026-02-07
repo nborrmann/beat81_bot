@@ -3,7 +3,7 @@ name: Book Beat81 Classes
 on:
   workflow_dispatch:  # Allow manual trigger
   repository_dispatch:
-    types: [tick]
+    types: [beat81]
 
 jobs:
   book:
