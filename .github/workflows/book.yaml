@@ -1,0 +1,25 @@
+name: Book Beat81 Classes
+
+on:
+  schedule:
+    # Every 2 minutes
+    - cron: '*/2 * * * *'
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  book:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      - name: Run booking bot
+        env:
+          BEAT81_TOKEN: ${{ secrets.BEAT81_TOKEN }}
+          BEAT81_USERID: ${{ secrets.BEAT81_USERID }}
+        run: uv run main.py
