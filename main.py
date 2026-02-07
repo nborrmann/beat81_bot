@@ -1,50 +1,57 @@
-# /// script
-# dependencies = [
-#   "requests",
-# ]
-# ///
-
-import requests
 from datetime import datetime
 import os
 import time
+import json
+import base64
+import json
+from urllib import request, parse, error
+from datetime import datetime
 
-token = os.getenv("BEAT81_TOKEN")
-user_id = os.getenv("BEAT81_USERID")
 BOOKING_URL = "https://api.production.b81.io/api/tickets"
+TOKEN = os.getenv("BEAT81_TOKEN")
+
+# decode user_id from token
+payload = TOKEN.split(".")[1]
+data = json.loads(base64.urlsafe_b64decode(payload + "=" * (-len(payload) % 4)))
+USER_ID = data["userId"]
 
 headers = {
-    "authorization": f"Bearer {token}",
+    "authorization": f"Bearer {TOKEN}",
     "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36",
+    "content-type": "application/json",
 }
 
 
+def perform_request(req):
+    try:
+        with request.urlopen(req) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+    except error.HTTPError as e:
+        body = e.read().decode("utf-8", errors="replace")
+        raise RuntimeError(f"HTTP {e.code}: {body}") from e
+
+
 def book(event_id):
-    r = requests.post(
-        BOOKING_URL,
-        json={"user_id": user_id, "event_id": event_id},
-        headers=headers,
+    payload = json.dumps({"user_id": USER_ID, "event_id": event_id}).encode("utf-8")
+    return perform_request(
+        request.Request(BOOKING_URL, data=payload, headers=headers, method="POST")
     )
-    r.raise_for_status()
-    return r.json()
 
 
 def load_bookings():
-    response = requests.get(
-        BOOKING_URL,
-        params={
-            "user_id": user_id,
-            "$sort[event_date_begin]": 1,
-            "event_date_begin_gte": datetime.now().astimezone().isoformat(timespec="milliseconds"),
-            "status_ne": "cancelled",
-            "$limit": 100,
-            "$skip": 0,
-        },
-        headers=headers,
-    )
+    params = {
+        "user_id": USER_ID,
+        "$sort[event_date_begin]": 1,
+        "event_date_begin_gte": datetime.now()
+        .astimezone()
+        .isoformat(timespec="milliseconds"),
+        "status_ne": "cancelled",
+        "$limit": 100,
+        "$skip": 0,
+    }
 
-    response.raise_for_status()
-    return response.json()["data"]
+    url = f"{BOOKING_URL}?{parse.urlencode(params)}"
+    return perform_request(request.Request(url, headers=headers, method="GET"))["data"]
 
 
 def book_from_waitlist():
@@ -86,7 +93,10 @@ def book_from_waitlist():
                 booking["event"]["max_participants"],
             )
 
-            print(book(booking["event"]["id"]))
+            try:
+                print(book(booking["event"]["id"]))
+            except Exception as e:
+                print(e)
             success = True
 
     return success
