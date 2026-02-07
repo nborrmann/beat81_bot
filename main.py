@@ -95,6 +95,7 @@ def book_from_waitlist():
 
             try:
                 print(book(booking["event"]["id"]))
+                booked_dates.add(datetime.fromisoformat(booking["event"]["date_begin"].replace("Z", "+00:00")).date())
             except Exception as e:
                 print(e)
             success = True
