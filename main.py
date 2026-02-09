@@ -31,10 +31,10 @@ def perform_request(req):
         raise RuntimeError(f"HTTP {e.code}: {body}") from e
 
 
-def book(event_id):
-    payload = json.dumps({"user_id": USER_ID, "event_id": event_id}).encode("utf-8")
+def book(ticket_id):
+    payload = json.dumps({"status_name": "booked"}).encode("utf-8")
     return perform_request(
-        request.Request(BOOKING_URL, data=payload, headers=headers, method="POST")
+        request.Request(f"{BOOKING_URL}/{ticket_id}/status", data=payload, headers=headers, method="POST")
     )
 
 
@@ -94,7 +94,7 @@ def book_from_waitlist():
             )
 
             try:
-                print(book(booking["event"]["id"]))
+                print(book(booking["id"]))
                 booked_dates.add(datetime.fromisoformat(booking["event"]["date_begin"].replace("Z", "+00:00")).date())
             except Exception as e:
                 print(e)
